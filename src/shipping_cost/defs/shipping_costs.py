@@ -1,12 +1,48 @@
 import dagster as dg
 import duckdb
+import subprocess
 from dagster_duckdb import DuckDBResource
 from pathlib import Path
 
 @dg.asset(
     group_name="shipping",
+    compute_kind="ruby",
+    description="Menjalankan rake task untuk mengambil data biaya kirim"
+)
+def fetch_api_costs(context: dg.AssetExecutionContext):
+    working_dir = "/Users/sugiarto/my_apps/sugi/emperid"
+    command = ["bundle", "exec", "rake", "address:fetch_cost"]
+
+    try:
+        # 3. Eksekusi perintah
+        result = subprocess.run(
+            command,
+            cwd=working_dir,  # Berpindah ke folder project Ruby sebelum eksekusi
+            check=True,             # Akan memicu error di Dagster jika rake task gagal
+            capture_output=True,    # Menangkap stdout/stderr agar bisa dibaca di Dagster
+            text=True               # Mengubah output byte menjadi string
+        )
+
+        # 4. Kirim output dari Ruby ke log Dagster
+        if result.stdout:
+            context.log.info(f"Ruby Output: {result.stdout}")
+
+        return dg.MaterializeResult(
+            metadata={
+                "status": "success",
+                "command": " ".join(command)
+            }
+        )
+
+    except subprocess.CalledProcessError as e:
+        # Jika rake task error, tampilkan detail errornya di Dagster
+        context.log.error(f"Rake task gagal! Error: {e.stderr}")
+        raise e
+
+@dg.asset(
+    group_name="shipping",
     compute_kind="duckdb",
-    deps=["districts"]
+    deps=["districts", fetch_api_costs]
 )
 def shipping_costs(context: dg.AssetExecutionContext, duckdb_resource: DuckDBResource) -> dg.MaterializeResult:
     root_dir = Path(__file__).parent.parent.parent.parent

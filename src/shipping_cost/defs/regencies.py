@@ -5,7 +5,7 @@ from pathlib import Path
 from .provinces import provinces
 
 @dg.asset(
-    group_name="ingestion",
+    group_name="shipping",
     compute_kind="duckdb",
     deps=[provinces]
 )

@@ -4,7 +4,7 @@ from dagster_duckdb import DuckDBResource
 from pathlib import Path
 
 @dg.asset(
-  group_name="ingestion",
+  group_name="shipping",
   compute_kind="duckdb",
   description="Indonesian Provinces"
 )

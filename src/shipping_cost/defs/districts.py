@@ -5,7 +5,7 @@ from pathlib import Path
 from .regencies import regencies
 
 @dg.asset(
-    group_name="ingestion",
+    group_name="shipping",
     compute_kind="duckdb",
     deps=["regencies"]
 )
